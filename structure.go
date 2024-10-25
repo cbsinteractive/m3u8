@@ -132,7 +132,7 @@ type MediaPlaylist struct {
 	// Deprecated: Key will be removed in a future version.
 	// Use Keys instead. HLS spec supports FairePlay, Widevine, and PlayReady Keys on the same manifest.
 	Key            *Key     // EXT-X-KEY is optional encryption key displayed before any segments (default key for the playlist)
-	Keys           []*Key   // EXT-X-KEY is optional encryption key displayed before any segments (default set of keysthe for the playlist)
+	Keys           []*Key   // EXT-X-KEY is optional encryption key displayed before any segments (default set of keys for the playlist)
 	Map            *Map     // EXT-X-MAP is optional tag specifies how to obtain the Media Initialization Section (default map for the playlist)
 	WV             *WV      // Widevine related tags outside of M3U8 specs
 	Twitch         []Twitch // non-standard tag for Twitch
