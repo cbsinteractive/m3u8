@@ -277,6 +277,39 @@ func TestSetKeyForMediaPlaylist(t *testing.T) {
 	}
 }
 
+// Test for Keys as []Key
+// Create new media playlist
+// Add segment to media playlist
+// Add encryption key
+func TestAddKeyForMediaPlaylist(t *testing.T) {
+	tests := []struct {
+		KeyFormat         string
+		KeyFormatVersions string
+		ExpectVersion     uint8
+	}{
+		{"", "", 3},
+		{"Format", "", 5},
+		{"", "Version", 5},
+		{"Format", "Version", 5},
+	}
+
+	for _, test := range tests {
+		p, e := NewMediaPlaylist(3, 5)
+		if e != nil {
+			t.Fatalf("Create media playlist failed: %s", e)
+		}
+		if e = p.Append("test01.ts", 5.0, ""); e != nil {
+			t.Errorf("Add 1st segment to a media playlist failed: %s", e)
+		}
+		if e := p.AddKey("AES-128", "https://example.com", "iv", test.KeyFormat, test.KeyFormatVersions, "id"); e != nil {
+			t.Errorf("Add key to a media playlist failed: %s", e)
+		}
+		if p.ver != test.ExpectVersion {
+			t.Errorf("Add key playlist version: %v, expected: %v", p.ver, test.ExpectVersion)
+		}
+	}
+}
+
 // Create new media playlist
 // Add segment to media playlist
 // Set encryption key
@@ -298,6 +331,32 @@ func TestSetDefaultKeyForMediaPlaylist(t *testing.T) {
 			t.Fatalf("Create media playlist failed: %s", e)
 		}
 		if e := p.SetDefaultKey("AES-128", "https://example.com", "iv", test.KeyFormat, test.KeyFormatVersions, "id"); e != nil {
+			t.Errorf("Set key to a media playlist failed: %s", e)
+		}
+		if p.ver != test.ExpectVersion {
+			t.Errorf("Set key playlist version: %v, expected: %v", p.ver, test.ExpectVersion)
+		}
+	}
+}
+
+func TestAddDefaultKeyForMediaPlaylist(t *testing.T) {
+	tests := []struct {
+		KeyFormat         string
+		KeyFormatVersions string
+		ExpectVersion     uint8
+	}{
+		{"", "", 3},
+		{"Format", "", 5},
+		{"", "Version", 5},
+		{"Format", "Version", 5},
+	}
+
+	for _, test := range tests {
+		p, e := NewMediaPlaylist(3, 5)
+		if e != nil {
+			t.Fatalf("Create media playlist failed: %s", e)
+		}
+		if e := p.AddDefaultKey("AES-128", "https://example.com", "iv", test.KeyFormat, test.KeyFormatVersions, "id"); e != nil {
 			t.Errorf("Set key to a media playlist failed: %s", e)
 		}
 		if p.ver != test.ExpectVersion {
