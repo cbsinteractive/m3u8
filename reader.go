@@ -682,35 +682,37 @@ func decodeLineOfMediaPlaylist(p *MediaPlaylist, wv *WV, state *decodingState, l
 		}
 	case strings.HasPrefix(line, "#EXT-X-KEY:"):
 		state.listType = MEDIA
-		state.xkey = new(Key)
+		aKey := new(Key)
 		for k, v := range decodeParamsLine(line[11:]) {
 			switch k {
 			case "METHOD":
-				state.xkey.Method = v
+				aKey.Method = v
 			case "URI":
-				state.xkey.URI = v
+				aKey.URI = v
 			case "IV":
-				state.xkey.IV = v
+				aKey.IV = v
 			case "KEYFORMAT":
-				state.xkey.Keyformat = v
+				aKey.Keyformat = v
 			case "KEYFORMATVERSIONS":
-				state.xkey.Keyformatversions = v
+				aKey.Keyformatversions = v
 			case "KEYID":
-				state.xkey.KeyID = v
+				aKey.KeyID = v
 			}
 		}
+
+		// this will handle []key or a single key.
 		state.tagKeys = true
 		exists := false
 		for _, xkey := range state.xkeys {
 			// check if the key already exists in the list. manifest may have multiple keys
-			if reflect.DeepEqual(xkey, state.xkey) {
+			if reflect.DeepEqual(xkey, aKey) {
 				exists = true
 				break
 			}
 		}
 
 		if !exists {
-			state.xkeys = append(state.xkeys, state.xkey)
+			state.xkeys = append(state.xkeys, aKey)
 		}
 	case strings.HasPrefix(line, "#EXT-X-MAP:"):
 		state.listType = MEDIA

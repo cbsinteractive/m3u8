@@ -340,7 +340,6 @@ type decodingState struct {
 	tagRange           bool
 	tagDiscontinuity   bool
 	tagProgramDateTime bool
-	tagKey             bool
 	tagKeys            bool
 	tagMap             bool
 	tagTwitch          bool
@@ -351,8 +350,7 @@ type decodingState struct {
 	duration           float64
 	title              string
 	variant            *Variant
-	alternatives       map[string][]*Alternative
-	xkey               *Key
+	alternatives       map[string][]*Alternative	
 	xkeys              []*Key
 	xmap               *Map
 	scte               *SCTE
