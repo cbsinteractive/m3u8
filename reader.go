@@ -16,6 +16,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"reflect"
 	"regexp"
 	"strconv"
 	"strings"
@@ -702,7 +703,7 @@ func decodeLineOfMediaPlaylist(p *MediaPlaylist, wv *WV, state *decodingState, l
 		exists := false
 		for _, xkey := range state.xkeys {
 			// check if the key already exists in the list. manifest may have multiple keys
-			if xkey.KeyID == state.xkey.KeyID && xkey.URI == state.xkey.URI && xkey.Method == state.xkey.Method && xkey.IV == state.xkey.IV {
+			if reflect.DeepEqual(xkey, state.xkey) {
 				exists = true
 				break
 			}
