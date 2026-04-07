@@ -156,12 +156,16 @@ type MasterPlaylist struct {
 	Args                string // optional arguments placed after URI (URI?Args)
 	CypherVersion       string // non-standard tag for Widevine (see also WV struct)
 	Twitch              Twitch // non-standard tag for Twitch
-	buf                 bytes.Buffer
-	ver                 uint8
-	independentSegments bool
-	Comments            []string
-	Custom              map[string]CustomTag
-	customDecoders      []CustomDecoder
+	// ContentSteeringServerURI and ContentSteeringPathwayID map to EXT-X-CONTENT-STEERING
+	// SERVER-URI and PATHWAY-ID (default pathway). Populated when decoding with Options.ContentSteering.
+	ContentSteeringServerURI string
+	ContentSteeringPathwayID string
+	buf                      bytes.Buffer
+	ver                      uint8
+	independentSegments      bool
+	Comments                 []string
+	Custom                   map[string]CustomTag
+	customDecoders           []CustomDecoder
 }
 
 // Variant structure represents variants for master playlist.
@@ -192,6 +196,7 @@ type VariantParams struct {
 	HDCPLevel          string
 	SupplementalCodecs string
 	FrameRate          float64        // EXT-X-STREAM-INF
+	PathwayID          string         // EXT-X-STREAM-INF PATHWAY-ID (content steering)
 	Alternatives       []*Alternative // EXT-X-MEDIA
 }
 

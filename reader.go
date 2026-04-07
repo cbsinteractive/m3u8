@@ -74,7 +74,7 @@ func (p *MasterPlaylist) decode(buf *bytes.Buffer, strict bool) error {
 		} else if err != nil {
 			break
 		}
-		err = decodeLineOfMasterPlaylist(p, state, line, strict)
+		err = decodeLineOfMasterPlaylist(p, state, line, strict, nil)
 		if strict && err != nil {
 			return err
 		}
@@ -195,7 +195,7 @@ func (p *MediaPlaylist) decode(buf *bytes.Buffer, strict bool) error {
 // Decode detects type of playlist and decodes it. It accepts bytes
 // buffer as input.
 func Decode(data bytes.Buffer, strict bool) (Playlist, ListType, error) {
-	return decode(&data, strict, nil)
+	return decode(&data, strict, nil, nil)
 }
 
 // DecodeFrom detects type of playlist and decodes it. It accepts data
@@ -206,7 +206,21 @@ func DecodeFrom(reader io.Reader, strict bool) (Playlist, ListType, error) {
 	if err != nil {
 		return nil, 0, err
 	}
-	return decode(buf, strict, nil)
+	return decode(buf, strict, nil, nil)
+}
+
+// DecodeFromWithOptions is like DecodeFrom but accepts optional decode settings.
+// If opts is nil, behavior matches DecodeFrom exactly.
+func DecodeFromWithOptions(reader io.Reader, strict bool, opts *Options) (Playlist, ListType, error) {
+	if opts == nil {
+		return DecodeFrom(reader, strict)
+	}
+	buf := new(bytes.Buffer)
+	_, err := buf.ReadFrom(reader)
+	if err != nil {
+		return nil, 0, err
+	}
+	return decode(buf, strict, nil, opts)
 }
 
 // DecodeWith detects the type of playlist and decodes it. It accepts either bytes.Buffer
@@ -214,14 +228,14 @@ func DecodeFrom(reader io.Reader, strict bool) (Playlist, ListType, error) {
 func DecodeWith(input interface{}, strict bool, customDecoders []CustomDecoder) (Playlist, ListType, error) {
 	switch v := input.(type) {
 	case bytes.Buffer:
-		return decode(&v, strict, customDecoders)
+		return decode(&v, strict, customDecoders, nil)
 	case io.Reader:
 		buf := new(bytes.Buffer)
 		_, err := buf.ReadFrom(v)
 		if err != nil {
 			return nil, 0, err
 		}
-		return decode(buf, strict, customDecoders)
+		return decode(buf, strict, customDecoders, nil)
 	default:
 		return nil, 0, errors.New("input must be bytes.Buffer or io.Reader type")
 	}
@@ -229,7 +243,7 @@ func DecodeWith(input interface{}, strict bool, customDecoders []CustomDecoder) 
 
 // Detect playlist type and decode it. May be used as decoder for both
 // master and media playlists.
-func decode(buf *bytes.Buffer, strict bool, customDecoders []CustomDecoder) (Playlist, ListType, error) {
+func decode(buf *bytes.Buffer, strict bool, customDecoders []CustomDecoder, opts *Options) (Playlist, ListType, error) {
 	var eof bool
 	var line string
 	var master *MasterPlaylist
@@ -268,7 +282,7 @@ func decode(buf *bytes.Buffer, strict bool, customDecoders []CustomDecoder) (Pla
 			continue
 		}
 
-		err = decodeLineOfMasterPlaylist(master, state, line, strict)
+		err = decodeLineOfMasterPlaylist(master, state, line, strict, opts)
 		if strict && err != nil {
 			return master, state.listType, err
 		}
@@ -317,7 +331,7 @@ func decodeParamsLine(line string) map[string]string {
 }
 
 // Parse one line of master playlist.
-func decodeLineOfMasterPlaylist(p *MasterPlaylist, state *decodingState, line string, strict bool) error {
+func decodeLineOfMasterPlaylist(p *MasterPlaylist, state *decodingState, line string, strict bool, opts *Options) error {
 	var err error
 
 	line = strings.TrimSpace(line)
@@ -352,6 +366,19 @@ func decodeLineOfMasterPlaylist(p *MasterPlaylist, state *decodingState, line st
 		p.Twitch = Twitch(line)
 	case line == "#EXT-X-INDEPENDENT-SEGMENTS":
 		p.SetIndependentSegments(true)
+	case strings.HasPrefix(line, "#EXT-X-CONTENT-STEERING:"):
+		if opts != nil && opts.ContentSteering != nil {
+			state.listType = MASTER
+			prefix := "#EXT-X-CONTENT-STEERING:"
+			for k, v := range decodeParamsLine(line[len(prefix):]) {
+				switch k {
+				case "SERVER-URI":
+					p.ContentSteeringServerURI = v
+				case "PATHWAY-ID":
+					p.ContentSteeringPathwayID = v
+				}
+			}
+		}
 	case strings.HasPrefix(line, "#EXT-X-MEDIA:"):
 		var alt Alternative
 		alt.Index = state.currentAltIdx
@@ -444,6 +471,10 @@ func decodeLineOfMasterPlaylist(p *MasterPlaylist, state *decodingState, line st
 				state.variant.HDCPLevel = v
 			case "SUPPLEMENTAL-CODECS":
 				state.variant.SupplementalCodecs = v
+			case "PATHWAY-ID":
+				if opts != nil && opts.ContentSteering != nil {
+					state.variant.PathwayID = v
+				}
 			}
 		}
 	case state.tagStreamInf && !strings.HasPrefix(line, "#"):
