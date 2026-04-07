@@ -2,8 +2,9 @@ package m3u8
 
 // Options configures decode/encode behavior for playlists that use optional extensions.
 type Options struct {
-	// ContentSteering, when non-nil, enables parsing and writing of RFC 8216 bis
-	// content steering tags and attributes (§4.4.6.6, §4.4.6.2).
+	// ContentSteering, when non-nil, enables parsing of steering tags/attributes and merges
+	// ContentSteeringOptions after master decode (see ApplyContentSteeringOptions) so Encode
+	// reflects policy (RFC 8216 bis §4.4.6.6, §4.4.6.2).
 	ContentSteering *ContentSteeringOptions
 }
 

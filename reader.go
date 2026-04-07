@@ -304,6 +304,9 @@ func decode(buf *bytes.Buffer, strict bool, customDecoders []CustomDecoder, opts
 	switch state.listType {
 	case MASTER:
 		master.setAlternatives(state)
+		if opts != nil && opts.ContentSteering != nil {
+			ApplyContentSteeringOptions(master, opts.ContentSteering)
+		}
 		return master, MASTER, nil
 	case MEDIA:
 		if media.Closed || media.MediaType == EVENT {
