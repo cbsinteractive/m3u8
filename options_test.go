@@ -126,3 +126,46 @@ https://example.com/low.m3u8
 		t.Fatal(err)
 	}
 }
+
+func TestDecodeFromWithOptionsAppliesSteeringOptionsForEncode(t *testing.T) {
+	const sample = `#EXTM3U
+#EXT-X-VERSION:3
+#EXT-X-STREAM-INF:BANDWIDTH=1280000,CODECS="avc1.64001E,mp4a.40.2"
+https://origin.example.com/asset/low.m3u8
+`
+	opts := &Options{ContentSteering: &ContentSteeringOptions{
+		ServerURI:        "https://steer.example/steer",
+		DefaultPathwayID: "cdn-a",
+		Pathways: []HLSSteeringPathway{
+			{ID: "cdn-a", BaseURL: "https://cdn-a.example.com"},
+			{ID: "cdn-b", BaseURL: "https://cdn-b.example.com"},
+		},
+	}}
+	pl, lt, err := DecodeFromWithOptions(strings.NewReader(sample), true, opts)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if lt != MASTER {
+		t.Fatalf("list type %v", lt)
+	}
+	m := pl.(*MasterPlaylist)
+	if m.ContentSteeringServerURI != "https://steer.example/steer" {
+		t.Fatalf("SERVER-URI %q", m.ContentSteeringServerURI)
+	}
+	if m.ContentSteeringPathwayID != "cdn-a" {
+		t.Fatalf("default pathway %q", m.ContentSteeringPathwayID)
+	}
+	if len(m.Variants) != 2 {
+		t.Fatalf("want 2 pathway variants, got %d", len(m.Variants))
+	}
+	enc := m.Encode().String()
+	if !strings.Contains(enc, "#EXT-X-CONTENT-STEERING:") || !strings.Contains(enc, "https://steer.example/steer") {
+		t.Fatalf("missing EXT-X-CONTENT-STEERING in:\n%s", enc)
+	}
+	if !strings.Contains(enc, "PATHWAY-ID=\"cdn-a\"") || !strings.Contains(enc, "PATHWAY-ID=\"cdn-b\"") {
+		t.Fatalf("missing pathway IDs in:\n%s", enc)
+	}
+	if !strings.Contains(enc, "https://cdn-a.example.com") || !strings.Contains(enc, "https://cdn-b.example.com") {
+		t.Fatalf("missing CDN hosts in:\n%s", enc)
+	}
+}
