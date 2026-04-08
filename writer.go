@@ -81,7 +81,7 @@ func (p *MasterPlaylist) Encode() *bytes.Buffer {
 	contentSteeringInUse := p.ContentSteeringServerURI != ""
 	if !contentSteeringInUse {
 		for _, pl := range p.Variants {
-			if pl.PathwayID != "" {
+			if pl != nil && pl.PathwayID != "" {
 				contentSteeringInUse = true
 				break
 			}
@@ -91,21 +91,23 @@ func (p *MasterPlaylist) Encode() *bytes.Buffer {
 		version(&p.ver, 9)
 	}
 
+	// RFC 8216 bis: EXT-X-CONTENT-STEERING immediately after EXTM3U (before VERSION).
+	if p.ContentSteeringServerURI != "" {
+		p.buf.WriteString("#EXT-X-CONTENT-STEERING:SERVER-URI=\"")
+		p.buf.WriteString(strings.ReplaceAll(p.ContentSteeringServerURI, `"`, `\"`))
+		p.buf.WriteRune('"')
+		if p.ContentSteeringPathwayID != "" {
+			p.buf.WriteString(",PATHWAY-ID=\"")
+			p.buf.WriteString(strings.ReplaceAll(p.ContentSteeringPathwayID, `"`, `\"`))
+			p.buf.WriteRune('"')
+		}
+		p.buf.WriteRune('\n')
+	}
+
 	if p.Twitch == "" {
 		p.buf.WriteString("#EXT-X-VERSION:")
 		p.buf.WriteString(strver(p.ver))
 		p.buf.WriteRune('\n')
-		if p.ContentSteeringServerURI != "" {
-			p.buf.WriteString("#EXT-X-CONTENT-STEERING:SERVER-URI=\"")
-			p.buf.WriteString(strings.ReplaceAll(p.ContentSteeringServerURI, `"`, `\"`))
-			p.buf.WriteRune('"')
-			if p.ContentSteeringPathwayID != "" {
-				p.buf.WriteString(",PATHWAY-ID=\"")
-				p.buf.WriteString(strings.ReplaceAll(p.ContentSteeringPathwayID, `"`, `\"`))
-				p.buf.WriteRune('"')
-			}
-			p.buf.WriteRune('\n')
-		}
 	}
 
 	for _, c := range p.Comments {
