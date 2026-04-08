@@ -78,6 +78,32 @@ func (p *MasterPlaylist) Encode() *bytes.Buffer {
 
 	p.buf.WriteString("#EXTM3U\n")
 
+	contentSteeringInUse := p.ContentSteeringServerURI != ""
+	if !contentSteeringInUse {
+		for _, pl := range p.Variants {
+			if pl != nil && pl.PathwayID != "" {
+				contentSteeringInUse = true
+				break
+			}
+		}
+	}
+	if contentSteeringInUse {
+		version(&p.ver, 9)
+	}
+
+	// RFC 8216 bis: EXT-X-CONTENT-STEERING immediately after EXTM3U (before VERSION).
+	if p.ContentSteeringServerURI != "" {
+		p.buf.WriteString("#EXT-X-CONTENT-STEERING:SERVER-URI=\"")
+		p.buf.WriteString(strings.ReplaceAll(p.ContentSteeringServerURI, `"`, `\"`))
+		p.buf.WriteRune('"')
+		if p.ContentSteeringPathwayID != "" {
+			p.buf.WriteString(",PATHWAY-ID=\"")
+			p.buf.WriteString(strings.ReplaceAll(p.ContentSteeringPathwayID, `"`, `\"`))
+			p.buf.WriteRune('"')
+		}
+		p.buf.WriteRune('\n')
+	}
+
 	if p.Twitch == "" {
 		p.buf.WriteString("#EXT-X-VERSION:")
 		p.buf.WriteString(strver(p.ver))
@@ -240,6 +266,11 @@ func (p *MasterPlaylist) Encode() *bytes.Buffer {
 			if pl.HDCPLevel != "" {
 				p.buf.WriteString(",HDCP-LEVEL=")
 				p.buf.WriteString(pl.HDCPLevel)
+			}
+			if pl.PathwayID != "" {
+				p.buf.WriteString(",PATHWAY-ID=\"")
+				p.buf.WriteString(strings.ReplaceAll(pl.PathwayID, `"`, `\"`))
+				p.buf.WriteRune('"')
 			}
 
 			p.buf.WriteRune('\n')
