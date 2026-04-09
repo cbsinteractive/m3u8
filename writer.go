@@ -796,27 +796,24 @@ func (p *MediaPlaylist) Encode() *bytes.Buffer {
 			}
 		}
 
-		// This logic checks for the presence of a key on the segment level.
-		// First, it prefers seg.Key for legacy/backwards compatibility reasons, otherwise uses the first Key in seg.Keys.
+		// Segment-level EXT-X-KEY output: emit only if not already written by playlist-level keys
 		var key *Key
 		if seg.Key != nil {
 			key = seg.Key
-		} else if len(seg.Keys) > 0 {
+		} else if len(seg.Keys) > 0 && seg.Keys[0] != nil {
 			key = seg.Keys[0]
 		}
 
-		// Helper function to check if a key exists in any of a list of keys.
 		keyExists := func(keys []*Key, k *Key) bool {
 			for _, candidate := range keys {
-				if reflect.DeepEqual(candidate, k) {
+				if candidate != nil && reflect.DeepEqual(candidate, k) {
 					return true
 				}
 			}
 			return false
 		}
 
-		// Only output another EXT-X-KEY tag if this segment's key isn't already present in the playlist scope.
-		// Note: checks both p.Keys and p.Key for completeness and backward compatibility.
+		// Output EXT-X-KEY only if segment key is not already present at playlist scope
 		if key != nil && !(keyExists(p.Keys, key) || keyExists([]*Key{p.Key}, key)) {
 			p.buf.WriteString("#EXT-X-KEY:")
 			p.buf.WriteString("METHOD=")
