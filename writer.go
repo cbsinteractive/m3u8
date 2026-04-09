@@ -16,6 +16,7 @@ import (
 	"errors"
 	"fmt"
 	"math"
+	"reflect"
 	"sort"
 	"strconv"
 	"strings"
@@ -794,32 +795,47 @@ func (p *MediaPlaylist) Encode() *bytes.Buffer {
 				}
 			}
 		}
+
+		var key *Key
+		if len(seg.Keys) > 0 {
+			key = seg.Keys[0]
+		}
+
+		keyExists := func(keys []*Key, key *Key) bool {
+			for _, k := range keys {
+				if reflect.DeepEqual(k, key) {
+					return true
+				}
+			}
+			return false
+		}
+
 		// check for key change
-		if seg.Key != nil && p.Key != seg.Key {
+		if key != nil && !keyExists(p.Keys, key) {
 			p.buf.WriteString("#EXT-X-KEY:")
 			p.buf.WriteString("METHOD=")
-			p.buf.WriteString(seg.Key.Method)
-			if seg.Key.Method != "NONE" {
+			p.buf.WriteString(key.Method)
+			if key.Method != "NONE" {
 				p.buf.WriteString(",URI=\"")
-				p.buf.WriteString(seg.Key.URI)
+				p.buf.WriteString(key.URI)
 				p.buf.WriteRune('"')
-				if seg.Key.IV != "" {
+				if key.IV != "" {
 					p.buf.WriteString(",IV=")
-					p.buf.WriteString(seg.Key.IV)
+					p.buf.WriteString(key.IV)
 				}
-				if seg.Key.Keyformat != "" {
+				if key.Keyformat != "" {
 					p.buf.WriteString(",KEYFORMAT=\"")
-					p.buf.WriteString(seg.Key.Keyformat)
+					p.buf.WriteString(key.Keyformat)
 					p.buf.WriteRune('"')
 				}
-				if seg.Key.Keyformatversions != "" {
+				if key.Keyformatversions != "" {
 					p.buf.WriteString(",KEYFORMATVERSIONS=\"")
-					p.buf.WriteString(seg.Key.Keyformatversions)
+					p.buf.WriteString(key.Keyformatversions)
 					p.buf.WriteRune('"')
 				}
-				if seg.Key.KeyID != "" {
+				if key.KeyID != "" {
 					p.buf.WriteString(",KEYID=\"")
-					p.buf.WriteString(seg.Key.KeyID)
+					p.buf.WriteString(key.KeyID)
 					p.buf.WriteRune('"')
 				}
 			}
