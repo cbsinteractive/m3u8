@@ -800,13 +800,13 @@ func (p *MediaPlaylist) Encode() *bytes.Buffer {
 		var key *Key
 		if seg.Key != nil {
 			key = seg.Key
-		} else if len(seg.Keys) > 0 && seg.Keys[0] != nil {
+		} else if len(seg.Keys) > 0 {
 			key = seg.Keys[0]
 		}
 
 		keyExists := func(keys []*Key, k *Key) bool {
 			for _, candidate := range keys {
-				if candidate != nil && reflect.DeepEqual(candidate, k) {
+				if reflect.DeepEqual(candidate, k) {
 					return true
 				}
 			}
