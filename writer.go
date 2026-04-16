@@ -178,6 +178,11 @@ func (p *MasterPlaylist) Encode() *bytes.Buffer {
 				p.buf.WriteString(",HDCP-LEVEL=")
 				p.buf.WriteString(pl.HDCPLevel)
 			}
+			if pl.PathwayID != "" {
+				p.buf.WriteString(",PATHWAY-ID=\"")
+				p.buf.WriteString(strings.ReplaceAll(pl.PathwayID, `"`, `\"`))
+				p.buf.WriteRune('"')
+			}
 			if pl.URI != "" {
 				p.buf.WriteString(",URI=\"")
 				p.buf.WriteString(pl.URI)
